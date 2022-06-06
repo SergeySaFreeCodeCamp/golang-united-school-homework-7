@@ -1,7 +1,12 @@
 package coverage
 
 import (
+	"errors"
 	"os"
+	"testing"
+	"time"
+	"strconv"
+	"github.com/stretchr/testify/assert"
 )
 
 // DO NOT EDIT THIS FUNCTION
@@ -17,4 +22,168 @@ func init() {
 }
 
 // WRITE YOUR CODE BELOW
+func TestLenPeople(t *testing.T) {
+	testPeople := make(People, 0, 2)
 
+	testPeople = append(testPeople,
+		Person {firstName: "Elmer", lastName : "Pierce", birthDay: time.Now()})
+	testPeople = append(testPeople,
+		Person {firstName: "Robert", lastName : "Guzman", birthDay: time.Now()})
+	
+	var peopleLen, finalLen int = testPeople.Len(), 2
+	
+	if peopleLen != finalLen {
+		t.Errorf("expected length of People: %d; got: %d", finalLen, peopleLen)
+	}
+}
+
+func TestLessPeople(t *testing.T) {
+	testPeople := make(People, 0, 4)
+	someBirthday, equaledBirthday := time.Now(), time.Now().Add(time.Second*1)
+	
+	testPeople = append(testPeople,
+		Person {firstName: "Elmer", lastName : "Pierce", birthDay: equaledBirthday})
+	testPeople = append(testPeople,
+		Person {firstName: "Robert", lastName : "Guzman", birthDay: someBirthday})
+	testPeople = append(testPeople,
+		Person {firstName: "William", lastName : "Chandler", birthDay: equaledBirthday})
+	testPeople = append(testPeople,
+		Person {firstName: "William", lastName : "Warner", birthDay: equaledBirthday})
+	
+	tData := map[string]struct {
+		i int
+		j int
+		expected bool
+	}{
+		"'not equaled birthdays' case": {i: 0, j: 1, expected: true},
+		"'equaled birthdays, not equaled firstnames' case": {i: 0, j: 2, expected: true},
+		"'equaled birthdays, equaled firstnames' case": {i: 2, j: 3, expected: true},
+	}
+	
+	for name, tcase := range tData {
+		t.Run(name, func(t *testing.T) {
+			got := testPeople.Less(tcase.i, tcase.j)
+			if got != tcase.expected {
+				t.Errorf("%s; expected: %v; got: %v", name, tcase.expected, got)
+			}
+		})
+	}
+}
+
+func TestSwapPeople(t *testing.T) {
+	testPeople := make(People, 0, 2)
+
+	testPeople = append(testPeople,
+		Person {firstName: "firstName1", lastName : "lastName1", birthDay: time.Now()})
+	testPeople = append(testPeople,
+		Person {firstName: "firstName2", lastName : "lastName2", birthDay: time.Now()})
+	
+	testPeople.Swap(0,1)
+	var checkOrder, expected bool = testPeople.Less(0, 1), false
+	
+	if checkOrder != expected {
+		t.Errorf("after swapping elements expected: %v; got: %v", expected, checkOrder)
+	}
+}
+
+func TestMatrixCreation(t *testing.T) {
+	var errDifferentRowsLength = errors.New("Rows need to be the same length")
+	_, strConvErr := strconv.Atoi("q")
+	
+	tData := map[string]struct {
+		input string
+		expected error
+	}{
+		"'different length of rows' case": {input: "1 2 3\n4 5", expected: errDifferentRowsLength},
+		"'number error' case": {input: "1 2 3\n4 5 q", expected: strConvErr},
+		"'success creation' case": {input: "1 2 3\n4 5 6", expected: nil},
+	}
+	
+	for name, tcase := range tData {
+		t.Run(name, func(t *testing.T) {
+			_, err := New(tcase.input)
+			if tcase.expected != nil {
+				if err == nil {
+					t.Errorf("%v; error expected, while not happend", name)
+				} else {
+					assert.EqualError(t, err, tcase.expected.Error(), "'%v' case, expected error: %v; got: %v", name, tcase.expected, err)
+				}
+			} else {
+				if err != nil {
+					t.Errorf("%v; error happend, while not expected: %v", name, err)
+				}
+			}
+		})
+	}
+}
+
+func TestMatrixRows(t *testing.T) {
+	testName := "'matrix represented in rows' case"
+	testMatrix, err := New("1 2 3\n4 5 6")
+	testMatrixRows := testMatrix.Rows()
+	expectedLen := 3
+	expectedVal := 3
+
+	if err != nil {
+		t.Errorf("%s; error happend, while not expected: %v", testName, err)
+	}
+	if rowLen := len(testMatrixRows[0]); rowLen != expectedLen {
+		t.Errorf("%s; expected length of row: %d; got: %v", testName, expectedLen, rowLen)
+	}
+	if el := testMatrixRows[0][2]; el != expectedVal {
+		t.Errorf("%s; expected third element of first row: %d; got: %v", testName, expectedVal, el)
+	}
+}
+
+func TestMatrixCols(t *testing.T) {
+	testName := "'matrix represented in columns' case"
+	testMatrix, err := New("1 2 3\n4 5 6")
+	testMatrixCols := testMatrix.Cols()
+	expectedLen := 2
+	expectedVal := 4
+
+	if err != nil {
+		t.Errorf("%s; error happend, while not expected: %v", testName, err)
+	}
+	if colLen := len(testMatrixCols[0]); colLen != expectedLen {
+		t.Errorf("%s; expected length of col: %d; got: %v", testName, expectedLen, colLen)
+	}
+	if el := testMatrixCols[0][1]; el != expectedVal {
+		t.Errorf("%s; expected second element of first col: %d; got: %v", testName, expectedVal, el)
+	}
+}
+
+func TestMatrixSuccessSet(t *testing.T) {
+	testName := "'matrix - set successed value' case"
+	testMatrix, err := New("1 2 3\n4 5 6")
+	setFlag := testMatrix.Set(1, 1, 10)
+	testMatrixCols := testMatrix.Cols()
+	expectedLen := 2
+	expectedVal := 10
+	
+	if err != nil {
+		t.Errorf("%s; error happend during creation, while not expected: %v", testName, err)
+	}
+	if !setFlag {
+		t.Errorf("%s; error happend during setting values, while not expected: %v", testName, err)
+	}
+	if colLen := len(testMatrixCols[0]); colLen != expectedLen {
+		t.Errorf("%s; expected length of col: %d; got: %v", testName, expectedLen, colLen)
+	}
+	if el := testMatrixCols[1][1]; el != expectedVal {
+		t.Errorf("%s; expected second element of first col: %d; got: %v", testName, expectedVal, el)
+	}
+}
+
+func TestMatrixFailSet(t *testing.T) {
+	testName := "'matrix - failed set value' case"
+	testMatrix, err := New("1 2 3\n4 5 6")
+	setFlag := testMatrix.Set(1, 10, 10)
+	
+	if err != nil {
+		t.Errorf("%s; error happend during creation, while not expected: %v", testName, err)
+	}
+	if setFlag {
+		t.Errorf("%s; error expected during setting values, while not happend", testName)
+	}
+}
